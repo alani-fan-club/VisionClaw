@@ -16,6 +16,12 @@ final class SettingsManager {
     case speakerOutputEnabled
     case videoStreamingEnabled
     case proactiveNotificationsEnabled
+    case wakeWord
+    case silenceTimeoutSeconds
+    case visionTriggerPhrases
+    case agentAutoStart
+    case ttsVoiceIdentifier
+    case ttsRate
   }
 
   private init() {}
@@ -85,13 +91,55 @@ final class SettingsManager {
     set { defaults.set(newValue, forKey: Key.proactiveNotificationsEnabled.rawValue) }
   }
 
+  // MARK: - Agent
+
+  var wakeWord: String {
+    get { defaults.string(forKey: Key.wakeWord.rawValue) ?? "hey claude" }
+    set { defaults.set(newValue, forKey: Key.wakeWord.rawValue) }
+  }
+
+  var silenceTimeoutSeconds: Double {
+    get {
+      let stored = defaults.double(forKey: Key.silenceTimeoutSeconds.rawValue)
+      return stored != 0 ? stored : 30.0
+    }
+    set { defaults.set(newValue, forKey: Key.silenceTimeoutSeconds.rawValue) }
+  }
+
+  var visionTriggerPhrases: [String] {
+    get {
+      defaults.stringArray(forKey: Key.visionTriggerPhrases.rawValue)
+        ?? ["what am I looking at", "what do you see", "describe this", "look at this"]
+    }
+    set { defaults.set(newValue, forKey: Key.visionTriggerPhrases.rawValue) }
+  }
+
+  var agentAutoStart: Bool {
+    get { defaults.object(forKey: Key.agentAutoStart.rawValue) as? Bool ?? true }
+    set { defaults.set(newValue, forKey: Key.agentAutoStart.rawValue) }
+  }
+
+  var ttsVoiceIdentifier: String? {
+    get { defaults.string(forKey: Key.ttsVoiceIdentifier.rawValue) }
+    set { defaults.set(newValue, forKey: Key.ttsVoiceIdentifier.rawValue) }
+  }
+
+  var ttsRate: Float {
+    get {
+      let stored = defaults.float(forKey: Key.ttsRate.rawValue)
+      return stored != 0 ? stored : 0.52
+    }
+    set { defaults.set(newValue, forKey: Key.ttsRate.rawValue) }
+  }
+
   // MARK: - Reset
 
   func resetAll() {
     for key in [Key.geminiAPIKey, .geminiSystemPrompt, .openClawHost, .openClawPort,
                 .openClawHookToken, .openClawGatewayToken, .webrtcSignalingURL,
                 .speakerOutputEnabled, .videoStreamingEnabled,
-                .proactiveNotificationsEnabled] {
+                .proactiveNotificationsEnabled, .wakeWord, .silenceTimeoutSeconds,
+                .visionTriggerPhrases, .agentAutoStart, .ttsVoiceIdentifier, .ttsRate] {
       defaults.removeObject(forKey: key.rawValue)
     }
   }

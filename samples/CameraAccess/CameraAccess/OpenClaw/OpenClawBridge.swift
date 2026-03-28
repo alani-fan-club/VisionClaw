@@ -16,9 +16,9 @@ class OpenClawBridge: ObservableObject {
   private let pingSession: URLSession
   private var sessionKey: String
   private var conversationHistory: [[String: String]] = []
-  private let maxHistoryTurns = 10
+  var maxHistoryTurns = 20
 
-  private static let stableSessionKey = "agent:main:glass"
+  private static let stableSessionKey = "agent:alistair:glass"
 
   init() {
     let config = URLSessionConfiguration.default
@@ -63,6 +63,16 @@ class OpenClawBridge: ObservableObject {
   func resetSession() {
     conversationHistory = []
     NSLog("[OpenClaw] Session reset (key retained: %@)", sessionKey)
+  }
+
+  func sendMessage(_ text: String) async -> String? {
+    let result = await delegateTask(task: text)
+    switch result {
+    case .success(let response): return response
+    case .failure(let error):
+        NSLog("[OpenClaw] Message failed: %@", error)
+        return nil
+    }
   }
 
   // MARK: - Agent Chat (session continuity via x-openclaw-session-key header)

@@ -4,6 +4,11 @@ import UIKit
 
 class AudioManager {
   var onAudioCaptured: ((Data) -> Void)?
+  var onAudioBufferCaptured: ((AVAudioPCMBuffer) -> Void)?
+  var onVoiceActivity: ((Float) -> Void)?
+  var isMutedForTTS: Bool = false
+
+  var isEngineRunning: Bool { audioEngine.isRunning }
 
   private let audioEngine = AVAudioEngine()
   private let playerNode = AVAudioPlayerNode()
@@ -110,6 +115,10 @@ class AudioManager {
     inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputNativeFormat) { [weak self] buffer, _ in
       guard let self else { return }
 
+      // Fire voice activity callback on every buffer (even when muted for TTS)
+      let rms = self.computeRMS(buffer)
+      self.onVoiceActivity?(rms)
+
       tapCount += 1
       let pcmData: Data
 
@@ -124,8 +133,14 @@ class AudioManager {
           if tapCount <= 3 { NSLog("[Audio] Resample failed for tap #%d", tapCount) }
           return
         }
+        if !self.isMutedForTTS {
+          self.onAudioBufferCaptured?(resampled)
+        }
         pcmData = self.float32BufferToInt16Data(resampled)
       } else {
+        if !self.isMutedForTTS {
+          self.onAudioBufferCaptured?(buffer)
+        }
         pcmData = self.float32BufferToInt16Data(buffer)
       }
 

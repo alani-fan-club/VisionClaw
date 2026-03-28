@@ -67,6 +67,9 @@ class StreamSessionViewModel: ObservableObject {
   // WebRTC Live streaming integration
   var webrtcSessionVM: WebRTCSessionViewModel?
 
+  // Agent session integration
+  var agentSessionVM: AgentSessionViewModel?
+
   // The core DAT SDK StreamSession - handles all streaming operations
   private var streamSession: StreamSession
   // Listener tokens are used to manage DAT SDK event subscriptions
@@ -120,6 +123,7 @@ class StreamSessionViewModel: ObservableObject {
           let image = UIImage(cgImage: cgImage)
           self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
           self.webrtcSessionVM?.pushVideoFrame(image)
+          self.agentSessionVM?.sendVideoFrameIfThrottled(image: image)
           if self.backgroundFrameCount <= 5 || self.backgroundFrameCount % 120 == 0 {
             NSLog("[Stream] Background frame #%d decoded and forwarded (%dx%d)",
                   self.backgroundFrameCount, width, height)
@@ -170,6 +174,7 @@ class StreamSessionViewModel: ObservableObject {
             }
             self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
             self.webrtcSessionVM?.pushVideoFrame(image)
+            self.agentSessionVM?.sendVideoFrameIfThrottled(image: image)
           }
         } else {
           // In background: makeUIImage() uses VideoToolbox GPU rendering which iOS suspends.
@@ -200,6 +205,7 @@ class StreamSessionViewModel: ObservableObject {
               let image = UIImage(cgImage: cgImage)
               self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
               self.webrtcSessionVM?.pushVideoFrame(image)
+              self.agentSessionVM?.sendVideoFrameIfThrottled(image: image)
             }
             self.videoDecoder.invalidateSession()
           }
@@ -296,6 +302,7 @@ class StreamSessionViewModel: ObservableObject {
         }
         self.geminiSessionVM?.sendVideoFrameIfThrottled(image: image)
         self.webrtcSessionVM?.pushVideoFrame(image)
+        self.agentSessionVM?.sendVideoFrameIfThrottled(image: image)
       }
     }
     camera.start()

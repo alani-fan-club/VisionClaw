@@ -14,6 +14,10 @@ struct SettingsView: View {
   @State private var speakerOutputEnabled: Bool = false
   @State private var videoStreamingEnabled: Bool = true
   @State private var proactiveNotificationsEnabled: Bool = true
+  @State private var wakeWord: String = ""
+  @State private var silenceTimeoutSeconds: Double = 30.0
+  @State private var agentAutoStart: Bool = true
+  @State private var ttsRate: Float = 0.52
   @State private var showResetConfirmation = false
 
   var body: some View {
@@ -104,6 +108,33 @@ struct SettingsView: View {
           Toggle("Proactive Notifications", isOn: $proactiveNotificationsEnabled)
         }
 
+        Section(header: Text("Agent"), footer: Text("Configure wake word detection, silence timeout, and text-to-speech for the voice agent.")) {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Wake Word")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            TextField("hey claude", text: $wakeWord)
+              .autocapitalization(.none)
+              .disableAutocorrection(true)
+          }
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Silence Timeout: \(Int(silenceTimeoutSeconds))s")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Slider(value: $silenceTimeoutSeconds, in: 5...120, step: 5)
+          }
+
+          Toggle("Auto-Start Agent", isOn: $agentAutoStart)
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("TTS Rate: \(String(format: "%.2f", ttsRate))")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            Slider(value: $ttsRate, in: 0.0...1.0, step: 0.01)
+          }
+        }
+
         Section {
           Button("Reset to Defaults") {
             showResetConfirmation = true
@@ -153,6 +184,10 @@ struct SettingsView: View {
     speakerOutputEnabled = settings.speakerOutputEnabled
     videoStreamingEnabled = settings.videoStreamingEnabled
     proactiveNotificationsEnabled = settings.proactiveNotificationsEnabled
+    wakeWord = settings.wakeWord
+    silenceTimeoutSeconds = settings.silenceTimeoutSeconds
+    agentAutoStart = settings.agentAutoStart
+    ttsRate = settings.ttsRate
   }
 
   private func save() {
@@ -168,5 +203,9 @@ struct SettingsView: View {
     settings.speakerOutputEnabled = speakerOutputEnabled
     settings.videoStreamingEnabled = videoStreamingEnabled
     settings.proactiveNotificationsEnabled = proactiveNotificationsEnabled
+    settings.wakeWord = wakeWord.trimmingCharacters(in: .whitespacesAndNewlines)
+    settings.silenceTimeoutSeconds = silenceTimeoutSeconds
+    settings.agentAutoStart = agentAutoStart
+    settings.ttsRate = ttsRate
   }
 }

@@ -14,8 +14,18 @@ class GeminiSessionViewModel: ObservableObject {
   private let geminiService = GeminiLiveService()
   private let openClawBridge = OpenClawBridge()
   private var toolCallRouter: ToolCallRouter?
-  private let audioManager = AudioManager()
+  private var audioManager = AudioManager()
+  private var ownsAudioManager: Bool = true
   private let eventClient = OpenClawEventClient()
+  var enableEventClient: Bool = true
+  var onResponseComplete: ((String) -> Void)?
+
+  init(externalAudioManager: AudioManager? = nil) {
+    if let external = externalAudioManager {
+      self.audioManager = external
+      self.ownsAudioManager = false
+    }
+  }
   private var lastVideoFrameTime: Date = .distantPast
   private var stateObservation: Task<Void, Never>?
 
@@ -54,6 +64,10 @@ class GeminiSessionViewModel: ObservableObject {
     geminiService.onTurnComplete = { [weak self] in
       guard let self else { return }
       Task { @MainActor in
+        // Fire response callback for vision handoff
+        if !self.aiTranscript.isEmpty {
+          self.onResponseComplete?(self.aiTranscript)
+        }
         // Clear user transcript when AI finishes responding
         self.userTranscript = ""
       }
@@ -122,13 +136,15 @@ class GeminiSessionViewModel: ObservableObject {
       }
     }
 
-    // Setup audio
-    do {
-      try audioManager.setupAudioSession(useIPhoneMode: streamingMode == .iPhone)
-    } catch {
-      errorMessage = "Audio setup failed: \(error.localizedDescription)"
-      isGeminiActive = false
-      return
+    // Setup audio (skip if using external AudioManager — already configured)
+    if ownsAudioManager {
+      do {
+        try audioManager.setupAudioSession(useIPhoneMode: streamingMode == .iPhone)
+      } catch {
+        errorMessage = "Audio setup failed: \(error.localizedDescription)"
+        isGeminiActive = false
+        return
+      }
     }
 
     // Connect to Gemini and wait for setupComplete
@@ -150,21 +166,23 @@ class GeminiSessionViewModel: ObservableObject {
       return
     }
 
-    // Start mic capture
-    do {
-      try audioManager.startCapture()
-    } catch {
-      errorMessage = "Mic capture failed: \(error.localizedDescription)"
-      geminiService.disconnect()
-      stateObservation?.cancel()
-      stateObservation = nil
-      isGeminiActive = false
-      connectionState = .disconnected
-      return
+    // Start mic capture (skip if using external AudioManager — already capturing)
+    if ownsAudioManager {
+      do {
+        try audioManager.startCapture()
+      } catch {
+        errorMessage = "Mic capture failed: \(error.localizedDescription)"
+        geminiService.disconnect()
+        stateObservation?.cancel()
+        stateObservation = nil
+        isGeminiActive = false
+        connectionState = .disconnected
+        return
+      }
     }
 
     // Connect to OpenClaw event stream for proactive notifications
-    if SettingsManager.shared.proactiveNotificationsEnabled {
+    if enableEventClient && SettingsManager.shared.proactiveNotificationsEnabled {
       eventClient.onNotification = { [weak self] text in
         guard let self else { return }
         Task { @MainActor in
@@ -177,10 +195,14 @@ class GeminiSessionViewModel: ObservableObject {
   }
 
   func stopSession() {
-    eventClient.disconnect()
+    if enableEventClient {
+      eventClient.disconnect()
+    }
     toolCallRouter?.cancelAll()
     toolCallRouter = nil
-    audioManager.stopCapture()
+    if ownsAudioManager {
+      audioManager.stopCapture()
+    }
     geminiService.disconnect()
     stateObservation?.cancel()
     stateObservation = nil

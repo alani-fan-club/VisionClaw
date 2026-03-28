@@ -22,6 +22,7 @@ struct StreamView: View {
   @ObservedObject var wearablesVM: WearablesViewModel
   @ObservedObject var geminiVM: GeminiSessionViewModel
   @ObservedObject var webrtcVM: WebRTCSessionViewModel
+  @ObservedObject var agentVM: AgentSessionViewModel
 
   var body: some View {
     ZStack {
@@ -49,6 +50,11 @@ struct StreamView: View {
         ProgressView()
           .scaleEffect(1.5)
           .foregroundColor(.white)
+      }
+
+      // Agent overlay (when agent is running and Gemini is not directly active)
+      if agentVM.isRunning && !geminiVM.isGeminiActive {
+        AgentOverlayView(agentVM: agentVM)
       }
 
       // Gemini status overlay (top) + speaking indicator
@@ -97,7 +103,7 @@ struct StreamView: View {
       // Bottom controls layer
       VStack {
         Spacer()
-        ControlsView(viewModel: viewModel, geminiVM: geminiVM, webrtcVM: webrtcVM)
+        ControlsView(viewModel: viewModel, geminiVM: geminiVM, webrtcVM: webrtcVM, agentVM: agentVM)
       }
       .padding(.all, 24)
     }
@@ -111,6 +117,9 @@ struct StreamView: View {
         }
         if webrtcVM.isActive {
           webrtcVM.stopSession()
+        }
+        if agentVM.isRunning {
+          agentVM.stopSession()
         }
       }
     }
@@ -143,6 +152,15 @@ struct StreamView: View {
     } message: {
       Text(webrtcVM.errorMessage ?? "")
     }
+    // Agent error alert
+    .alert("Agent", isPresented: Binding(
+      get: { agentVM.errorMessage != nil },
+      set: { if !$0 { agentVM.errorMessage = nil } }
+    )) {
+      Button("OK") { agentVM.errorMessage = nil }
+    } message: {
+      Text(agentVM.errorMessage ?? "")
+    }
   }
 }
 
@@ -151,6 +169,7 @@ struct ControlsView: View {
   @ObservedObject var viewModel: StreamSessionViewModel
   @ObservedObject var geminiVM: GeminiSessionViewModel
   @ObservedObject var webrtcVM: WebRTCSessionViewModel
+  @ObservedObject var agentVM: AgentSessionViewModel
 
   var body: some View {
     // Controls row
@@ -172,23 +191,38 @@ struct ControlsView: View {
         }
       }
 
-      // Gemini AI button (disabled when WebRTC is active — audio conflict)
+      // Agent button — toggles the OpenClaw agent session
       CircleButton(
-        icon: geminiVM.isGeminiActive ? "waveform.circle.fill" : "waveform.circle",
-        text: "AI"
+        icon: agentVM.isRunning ? "brain.head.profile.fill" : "brain.head.profile",
+        text: "Agent"
       ) {
-        Task {
-          if geminiVM.isGeminiActive {
-            geminiVM.stopSession()
-          } else {
+        if agentVM.isRunning {
+          agentVM.stopSession()
+        } else {
+          agentVM.startSession(streamingMode: viewModel.streamingMode)
+        }
+      }
+      .opacity((webrtcVM.isActive || geminiVM.isGeminiActive) ? 0.4 : 1.0)
+      .disabled(webrtcVM.isActive || geminiVM.isGeminiActive)
+
+      // Gemini button — toggles Gemini Live for fast voice + vision replies
+      CircleButton(
+        icon: geminiVM.isGeminiActive ? "sparkles" : "sparkle",
+        text: "Gemini"
+      ) {
+        if geminiVM.isGeminiActive {
+          geminiVM.stopSession()
+        } else {
+          Task {
+            geminiVM.streamingMode = viewModel.streamingMode
             await geminiVM.startSession()
           }
         }
       }
-      .opacity(webrtcVM.isActive ? 0.4 : 1.0)
-      .disabled(webrtcVM.isActive)
+      .opacity((webrtcVM.isActive || agentVM.isRunning) ? 0.4 : 1.0)
+      .disabled(webrtcVM.isActive || agentVM.isRunning)
 
-      // WebRTC Live Stream button (disabled when Gemini is active — audio conflict)
+      // WebRTC Live Stream button (disabled when agent or Gemini is active — audio conflict)
       CircleButton(
         icon: webrtcVM.isActive
           ? "antenna.radiowaves.left.and.right.circle.fill"
@@ -203,8 +237,8 @@ struct ControlsView: View {
           }
         }
       }
-      .opacity(geminiVM.isGeminiActive ? 0.4 : 1.0)
-      .disabled(geminiVM.isGeminiActive)
+      .opacity((geminiVM.isGeminiActive || agentVM.isRunning) ? 0.4 : 1.0)
+      .disabled(geminiVM.isGeminiActive || agentVM.isRunning)
     }
   }
 }

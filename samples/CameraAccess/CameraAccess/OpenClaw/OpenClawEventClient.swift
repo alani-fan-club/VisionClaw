@@ -1,11 +1,12 @@
 import Foundation
 
-class OpenClawEventClient {
+@MainActor
+class OpenClawEventClient: ObservableObject {
   var onNotification: ((String) -> Void)?
 
   private var webSocketTask: URLSessionWebSocketTask?
   private var session: URLSession?
-  private var isConnected = false
+  @Published var isConnected: Bool = false
   private var shouldReconnect = false
   private var reconnectDelay: TimeInterval = 2
   private let maxReconnectDelay: TimeInterval = 30
@@ -38,7 +39,8 @@ class OpenClawEventClient {
       .replacingOccurrences(of: "http://", with: "")
       .replacingOccurrences(of: "https://", with: "")
     let port = GeminiConfig.openClawPort
-    guard let url = URL(string: "ws://\(host):\(port)") else {
+    let wsScheme = GeminiConfig.openClawHost.hasPrefix("https") ? "wss" : "ws"
+    guard let url = URL(string: "\(wsScheme)://\(host):\(port)") else {
       NSLog("[OpenClawWS] Invalid URL")
       return
     }
@@ -55,24 +57,26 @@ class OpenClawEventClient {
 
   private func startReceiving() {
     webSocketTask?.receive { [weak self] result in
-      guard let self else { return }
-      switch result {
-      case .success(let message):
-        switch message {
-        case .string(let text):
-          self.handleMessage(text)
-        case .data(let data):
-          if let text = String(data: data, encoding: .utf8) {
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        switch result {
+        case .success(let message):
+          switch message {
+          case .string(let text):
             self.handleMessage(text)
+          case .data(let data):
+            if let text = String(data: data, encoding: .utf8) {
+              self.handleMessage(text)
+            }
+          @unknown default:
+            break
           }
-        @unknown default:
-          break
+          self.startReceiving()
+        case .failure(let error):
+          NSLog("[OpenClawWS] Receive error: %@", error.localizedDescription)
+          self.isConnected = false
+          self.scheduleReconnect()
         }
-        self.startReceiving()
-      case .failure(let error):
-        NSLog("[OpenClawWS] Receive error: %@", error.localizedDescription)
-        self.isConnected = false
-        self.scheduleReconnect()
       }
     }
   }
@@ -124,7 +128,7 @@ class OpenClawEventClient {
       "method": "connect",
       "params": [
         "minProtocol": 1,
-        "maxProtocol": 1,
+        "maxProtocol": 3,
         "client": [
           "id": "gateway-client",
           "displayName": "VisionClaw Glass",
@@ -140,9 +144,9 @@ class OpenClawEventClient {
 
     guard let data = try? JSONSerialization.data(withJSONObject: connectMsg),
           let string = String(data: data, encoding: .utf8) else { return }
-    webSocketTask?.send(.string(string)) { error in
-      if let error {
-        NSLog("[OpenClawWS] Handshake send error: %@", error.localizedDescription)
+    webSocketTask?.send(.string(string)) { sendError in
+      if let sendError {
+        NSLog("[OpenClawWS] Handshake send error: %@", sendError.localizedDescription)
       }
     }
   }
@@ -176,8 +180,10 @@ class OpenClawEventClient {
 
   private func scheduleReconnect() {
     guard shouldReconnect else { return }
-    NSLog("[OpenClawWS] Reconnecting in %.0fs", reconnectDelay)
-    DispatchQueue.main.asyncAfter(deadline: .now() + reconnectDelay) { [weak self] in
+    let delay = reconnectDelay
+    NSLog("[OpenClawWS] Reconnecting in %.0fs", delay)
+    Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
       guard let self, self.shouldReconnect else { return }
       self.reconnectDelay = min(self.reconnectDelay * 2, self.maxReconnectDelay)
       self.establishConnection()

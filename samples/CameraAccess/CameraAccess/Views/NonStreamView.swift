@@ -20,6 +20,7 @@ import SwiftUI
 struct NonStreamView: View {
   @ObservedObject var viewModel: StreamSessionViewModel
   @ObservedObject var wearablesVM: WearablesViewModel
+  @ObservedObject var agentVM: AgentSessionViewModel
   @State private var sheetHeight: CGFloat = 300
   @State private var showSettings = false
 
@@ -111,6 +112,18 @@ struct NonStreamView: View {
         ) {
           Task {
             await viewModel.handleStartIPhone()
+          }
+        }
+
+        CustomButton(
+          title: agentVM.isRunning ? "Stop Agent" : "Talk to Agent",
+          style: .secondary,
+          isDisabled: false
+        ) {
+          if agentVM.isRunning {
+            agentVM.stopSession()
+          } else {
+            agentVM.startSession(streamingMode: .glasses)
           }
         }
 
