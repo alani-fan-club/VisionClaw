@@ -29,7 +29,7 @@ class AgentSessionViewModel: ObservableObject {
   private let audioManager = AudioManager()
   private let speechService = SpeechService()
   private let ttsService = TTSService()
-  private let wakeWordDetector = WakeWordDetector()
+  private let sherpaWakeWord = SherpaWakeWordService()
   private let voiceActivityDetector = VoiceActivityDetector()
   private let openClawBridge = OpenClawBridge()
   private let eventClient = OpenClawEventClient()
@@ -43,10 +43,6 @@ class AgentSessionViewModel: ObservableObject {
   private var speechAuthGranted: Bool = false
   private var streamingMode: StreamingMode = .glasses
   private var isWaitingForAgent: Bool = false  // true while waiting for OpenClaw response or TTS
-
-  /// Timer to stop SpeechService in passive mode if no wake word is detected
-  /// after VAD reports end of utterance.
-  private var passiveWakeWordTimer: Timer?
 
   private let acknowledgments = ["Yes?", "I'm here.", "Listening.", "Go ahead."]
 
@@ -63,7 +59,6 @@ class AgentSessionViewModel: ObservableObject {
 
     // Apply settings
     let settings = SettingsManager.shared
-    wakeWordDetector.wakePhrase = settings.wakeWord
     ttsService.voiceIdentifier = settings.ttsVoiceIdentifier
     voiceActivityDetector.sessionTimeoutSeconds = settings.silenceTimeoutSeconds
 
@@ -78,9 +73,9 @@ class AgentSessionViewModel: ObservableObject {
       return
     }
 
-    // Wire audio buffers to speech recognition (always flowing)
+    // Wire audio buffers to Sherpa wake word detection (passive mode)
     audioManager.onAudioBufferCaptured = { [weak self] buffer in
-      self?.speechService.appendAudioBuffer(buffer)
+      self?.sherpaWakeWord.processAudioBuffer(buffer)
     }
 
     // Wire audio RMS to voice activity detector
@@ -130,15 +125,11 @@ class AgentSessionViewModel: ObservableObject {
       NSLog("[Agent] Event client connecting")
     }
 
-    // Wire partial transcripts — behavior depends on current mode
+    // Wire partial transcripts — only used in active mode
     speechService.onPartialTranscript = { [weak self] text in
-      guard let self else { return }
-      if self.mode == .passive {
-        self.wakeWordDetector.processPartialTranscript(text)
-      } else if self.mode == .active {
-        self.userTranscript = text
-        self.pendingTranscript = text
-      }
+      guard let self, self.mode == .active else { return }
+      self.userTranscript = text
+      self.pendingTranscript = text
     }
 
     // Wire final transcripts for active mode
@@ -149,32 +140,30 @@ class AgentSessionViewModel: ObservableObject {
       self.pendingTranscript = text
     }
 
-    // Wire wake word detection to transition to active mode
-    wakeWordDetector.onWakeWordDetected = { [weak self] in
+    // Wire Sherpa wake word detection to transition to active mode
+    sherpaWakeWord.onWakeWordDetected = { [weak self] in
       guard let self else { return }
-      NSLog("[Agent] Wake word detected, transitioning to active mode")
-      self.cancelPassiveWakeWordTimer()
+      NSLog("[Agent] Wake word detected (Sherpa), transitioning to active mode")
       self.transitionToActiveMode()
     }
 
     // Wire VAD callbacks
     wireVADCallbacks()
 
-    // Request speech authorization and start recognition immediately
+    // Request speech authorization (but don't start recognition yet — only in active mode)
     speechService.requestAuthorization { [weak self] granted in
       guard let self else { return }
       self.speechAuthGranted = granted
-      if granted {
-        self.speechService.startRecognition()
-        NSLog("[Agent] Speech recognition started (always-on)")
-      } else {
+      if !granted {
         self.errorMessage = "Speech recognition authorization denied"
         NSLog("[Agent] Speech recognition authorization denied")
+      } else {
+        NSLog("[Agent] Speech recognition authorized (will start on wake word)")
       }
     }
 
-    // Start wake word detection and enter passive mode
-    wakeWordDetector.startListening()
+    // Start Sherpa wake word detection and enter passive mode
+    sherpaWakeWord.start()
     voiceActivityDetector.reset()
     mode = .passive
     isRunning = true
@@ -195,15 +184,13 @@ class AgentSessionViewModel: ObservableObject {
   func stopSession() {
     NSLog("[Agent] Stopping session")
 
-    cancelPassiveWakeWordTimer()
-
     // Stop Gemini if active
     if let gemini = geminiSessionVM {
       gemini.stopSession()
       geminiSessionVM = nil
     }
 
-    wakeWordDetector.stopListening()
+    sherpaWakeWord.stop()
     voiceActivityDetector.reset()
     speechService.stopRecognition()
     ttsService.stop()
@@ -267,36 +254,6 @@ class AgentSessionViewModel: ObservableObject {
     }
   }
 
-  // MARK: - Passive Mode Speech Management
-
-  /// Start SpeechService temporarily to listen for wake word after VAD detects speech.
-  private func startSpeechForPassiveWakeWord() {
-    speechService.startRecognition()
-
-    // Safety timer: if no wake word detected within 5 seconds, stop speech
-    cancelPassiveWakeWordTimer()
-    passiveWakeWordTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
-      Task { @MainActor [weak self] in
-        guard let self, self.mode == .passive else { return }
-        NSLog("[Agent] Passive wake word safety timer — stopping SpeechService")
-        self.stopSpeechForPassiveWakeWord()
-      }
-    }
-  }
-
-  /// Stop SpeechService when returning to VAD-only passive monitoring.
-  private func stopSpeechForPassiveWakeWord() {
-    cancelPassiveWakeWordTimer()
-    speechService.stopRecognition()
-    wakeWordDetector.reset()
-    NSLog("[Agent] SpeechService stopped, back to VAD-only passive monitoring")
-  }
-
-  private func cancelPassiveWakeWordTimer() {
-    passiveWakeWordTimer?.invalidate()
-    passiveWakeWordTimer = nil
-  }
-
   // MARK: - Send to OpenClaw
 
   private func sendToOpenClaw(_ text: String) {
@@ -336,17 +293,14 @@ class AgentSessionViewModel: ObservableObject {
     agentResponse = ""
     pendingTranscript = ""
 
-    // Stop wake word listening
-    wakeWordDetector.stopListening()
-    cancelPassiveWakeWordTimer()
+    // Stop Sherpa wake word detection
+    sherpaWakeWord.stop()
 
-    // Ensure SpeechService is running continuously in active mode
+    // Switch audio buffers to SpeechService for conversation
     audioManager.onAudioBufferCaptured = { [weak self] buffer in
       self?.speechService.appendAudioBuffer(buffer)
     }
-    if !speechService.isRecognizing {
-      speechService.startRecognition()
-    }
+    speechService.startRecognition()
 
     // Reset VAD so session timeout starts fresh
     voiceActivityDetector.reset()
@@ -364,25 +318,24 @@ class AgentSessionViewModel: ObservableObject {
     // Stop any ongoing TTS
     ttsService.stop()
 
-    // Clean restart of speech recognition to avoid stale state
+    // Stop SpeechService (only needed in active mode)
     speechService.stopRecognition()
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-      guard let self, self.isRunning else { return }
-      self.speechService.startRecognition()
-      NSLog("[Agent] Speech recognition restarted for passive mode")
+
+    // Switch audio buffers back to Sherpa for wake word detection
+    audioManager.onAudioBufferCaptured = { [weak self] buffer in
+      self?.sherpaWakeWord.processAudioBuffer(buffer)
     }
+
+    // Start Sherpa wake word detection
+    sherpaWakeWord.start()
 
     // Clear UI state
     userTranscript = ""
     agentResponse = ""
     pendingTranscript = ""
 
-    // Reset VAD and wake word detector
+    // Reset VAD for next active session
     voiceActivityDetector.reset()
-    wakeWordDetector.reset()
-
-    // Resume wake word listening
-    wakeWordDetector.startListening()
 
     mode = .passive
     NSLog("[Agent] Entered passive mode")
