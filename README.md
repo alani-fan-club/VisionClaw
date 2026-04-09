@@ -1,6 +1,6 @@
 # VisionClaw
 
-> **This is an [OpenClaw](https://github.com/nichochar/openclaw) fork** with first-class, direct OpenClaw integration. The app is built to talk to your own self-hosted OpenClaw gateway running on your Mac, giving Gemini access to all 56+ OpenClaw skills (messaging, web search, smart home, lists, reminders, notes, and more) out of the box.
+> **This is an [OpenClaw](https://github.com/nichochar/openclaw) Specialised fork** with first-class, direct OpenClaw integration. The app is built to talk to your own self-hosted OpenClaw gateway running on your Mac, giving you access to all 56+ OpenClaw skills (messaging, web search, smart home, lists, reminders, notes, and more) out of the box, with or without gemini (gemini needed for vision). The priority of this fork is voice integration with your openclaw ecosystem back and forth messages can be sent to the glasses as well from your agent sessions (HEARTBEATS / JOBS etc)
 
 ![VisionClaw](assets/teaserimage.png)
 
