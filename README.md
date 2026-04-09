@@ -1,12 +1,14 @@
 # VisionClaw
 
+> **This is an [OpenClaw](https://github.com/nichochar/openclaw) fork** with first-class, direct OpenClaw integration. The app is built to talk to your own self-hosted OpenClaw gateway running on your Mac, giving Gemini access to all 56+ OpenClaw skills (messaging, web search, smart home, lists, reminders, notes, and more) out of the box.
+
 ![VisionClaw](assets/teaserimage.png)
 
-A real-time AI assistant for Meta Ray-Ban smart glasses. See what you see, hear what you say, and take actions on your behalf -- all through voice.
+A real-time AI assistant for Meta Ray-Ban smart glasses. See what you see, hear what you say, and take actions on your behalf -- all through voice, powered by your own OpenClaw instance.
 
 ![Cover](assets/cover.png)
 
-Built on [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat-ios) (iOS) / [DAT Android SDK](https://github.com/nichochar/openclaw) (Android) + [Gemini Live API](https://ai.google.dev/gemini-api/docs/live) + [OpenClaw](https://github.com/nichochar/openclaw) (optional).
+Built on [OpenClaw](https://github.com/nichochar/openclaw) + [Gemini Live API](https://ai.google.dev/gemini-api/docs/live) + [Meta Wearables DAT SDK](https://github.com/facebook/meta-wearables-dat-ios) (iOS) / [DAT Android SDK](https://github.com/nichochar/openclaw) (Android).
 
 **Supported platforms:** iOS (iPhone) and Android (Pixel, Samsung, etc.)
 
