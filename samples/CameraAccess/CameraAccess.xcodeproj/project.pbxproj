@@ -38,6 +38,7 @@
 		9DD6CC002F4A000000ED7098 /* VideoDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD6CBFF2F4A000000ED7098 /* VideoDecoder.swift */; };
 		9DD894B22F4047630090B9B9 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD894AF2F4047630090B9B9 /* SettingsManager.swift */; };
 		9DD894B32F4047630090B9B9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD894B02F4047630090B9B9 /* SettingsView.swift */; };
+		C1A2B3D42F5A000200000001 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A2B3D42F5A000100000001 /* SetupView.swift */; };
 		9DD895962F405E0E0090B9B9 /* RTCVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD895952F405E0E0090B9B9 /* RTCVideoView.swift */; };
 		9DD895972F405E0E0090B9B9 /* PiPVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DD895942F405E0E0090B9B9 /* PiPVideoView.swift */; };
 		A1B2C3D42F0A000200000001 /* GeminiConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D42F0A000100000001 /* GeminiConfig.swift */; };
@@ -121,6 +122,7 @@
 		9DD6CBFF2F4A000000ED7098 /* VideoDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDecoder.swift; sourceTree = "<group>"; };
 		9DD894AF2F4047630090B9B9 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		9DD894B02F4047630090B9B9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C1A2B3D42F5A000100000001 /* SetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupView.swift; sourceTree = "<group>"; };
 		9DD895942F405E0E0090B9B9 /* PiPVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPVideoView.swift; sourceTree = "<group>"; };
 		9DD895952F405E0E0090B9B9 /* RTCVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTCVideoView.swift; sourceTree = "<group>"; };
 		A1B2C3D42F0A000100000001 /* GeminiConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiConfig.swift; sourceTree = "<group>"; };
@@ -291,6 +293,7 @@
 			children = (
 				9DD894AF2F4047630090B9B9 /* SettingsManager.swift */,
 				9DD894B02F4047630090B9B9 /* SettingsView.swift */,
+				C1A2B3D42F5A000100000001 /* SetupView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -482,6 +485,7 @@
 				A1B2C3D42F0A000200000004 /* GeminiSessionViewModel.swift in Sources */,
 				9DD894B22F4047630090B9B9 /* SettingsManager.swift in Sources */,
 				9DD894B32F4047630090B9B9 /* SettingsView.swift in Sources */,
+				C1A2B3D42F5A000200000001 /* SetupView.swift in Sources */,
 				A1B2C3D42F0A000200000005 /* GeminiOverlayView.swift in Sources */,
 				B1C2D3E4F50A100200000001 /* SpeechService.swift in Sources */,
 				B1C2D3E4F50A100200000002 /* TTSService.swift in Sources */,
@@ -544,7 +548,7 @@
 					"$(inherited)",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.samantha.VisionClaw;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.VisionClaw;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "CameraAccess/SherpaOnnx-Bridging-Header.h";
@@ -581,7 +585,7 @@
 					"$(inherited)",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.samantha.VisionClaw;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.VisionClaw;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "CameraAccess/SherpaOnnx-Bridging-Header.h";

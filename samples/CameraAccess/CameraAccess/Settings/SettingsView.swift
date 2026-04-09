@@ -18,6 +18,8 @@ struct SettingsView: View {
   @State private var silenceTimeoutSeconds: Double = 30.0
   @State private var agentAutoStart: Bool = true
   @State private var ttsRate: Float = 0.52
+  @State private var elevenLabsAPIKey: String = ""
+  @State private var elevenLabsVoiceId: String = ""
   @State private var showResetConfirmation = false
 
   var body: some View {
@@ -46,7 +48,7 @@ struct SettingsView: View {
             Text("Host")
               .font(.caption)
               .foregroundColor(.secondary)
-            TextField("http://your-mac.local", text: $openClawHost)
+            TextField("https://your-mac.tail12345.ts.net", text: $openClawHost)
               .autocapitalization(.none)
               .disableAutocorrection(true)
               .keyboardType(.URL)
@@ -106,6 +108,28 @@ struct SettingsView: View {
 
         Section(header: Text("Notifications"), footer: Text("Receive proactive updates from OpenClaw (heartbeat, scheduled tasks) spoken through the glasses.")) {
           Toggle("Proactive Notifications", isOn: $proactiveNotificationsEnabled)
+        }
+
+        Section(header: Text("ElevenLabs TTS"), footer: Text("Optional. Provide an ElevenLabs API key to use high-quality streaming voice synthesis instead of system TTS.")) {
+          VStack(alignment: .leading, spacing: 4) {
+            Text("API Key")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            TextField("ElevenLabs API key (optional)", text: $elevenLabsAPIKey)
+              .autocapitalization(.none)
+              .disableAutocorrection(true)
+              .font(.system(.body, design: .monospaced))
+          }
+
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Voice ID")
+              .font(.caption)
+              .foregroundColor(.secondary)
+            TextField("jfIS2w2yJi0grJZPyEsk", text: $elevenLabsVoiceId)
+              .autocapitalization(.none)
+              .disableAutocorrection(true)
+              .font(.system(.body, design: .monospaced))
+          }
         }
 
         Section(header: Text("Agent"), footer: Text("Configure wake word detection, silence timeout, and text-to-speech for the voice agent.")) {
@@ -188,6 +212,8 @@ struct SettingsView: View {
     silenceTimeoutSeconds = settings.silenceTimeoutSeconds
     agentAutoStart = settings.agentAutoStart
     ttsRate = settings.ttsRate
+    elevenLabsAPIKey = settings.elevenLabsAPIKey
+    elevenLabsVoiceId = settings.elevenLabsVoiceId
   }
 
   private func save() {
@@ -207,5 +233,7 @@ struct SettingsView: View {
     settings.silenceTimeoutSeconds = silenceTimeoutSeconds
     settings.agentAutoStart = agentAutoStart
     settings.ttsRate = ttsRate
+    settings.elevenLabsAPIKey = elevenLabsAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    settings.elevenLabsVoiceId = elevenLabsVoiceId.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }

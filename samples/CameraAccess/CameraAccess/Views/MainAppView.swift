@@ -20,6 +20,7 @@ import SwiftUI
 struct MainAppView: View {
   let wearables: WearablesInterface
   @ObservedObject private var viewModel: WearablesViewModel
+  @State private var hasCompletedSetup = SettingsManager.shared.hasCompletedSetup
 
   init(wearables: WearablesInterface, viewModel: WearablesViewModel) {
     self.wearables = wearables
@@ -27,7 +28,11 @@ struct MainAppView: View {
   }
 
   var body: some View {
-    if viewModel.registrationState == .registered || viewModel.hasMockDevice || viewModel.skipToIPhoneMode {
+    if !hasCompletedSetup {
+      SetupView {
+        hasCompletedSetup = true
+      }
+    } else if viewModel.registrationState == .registered || viewModel.hasMockDevice || viewModel.skipToIPhoneMode {
       StreamSessionView(wearables: wearables, wearablesVM: viewModel)
     } else {
       // User not registered - show registration/onboarding flow

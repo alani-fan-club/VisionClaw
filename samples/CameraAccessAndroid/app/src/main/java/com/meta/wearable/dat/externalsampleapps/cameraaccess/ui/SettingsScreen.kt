@@ -122,7 +122,7 @@ fun SettingsScreen(
                 value = openClawHost,
                 onValueChange = { openClawHost = it },
                 label = "Host",
-                placeholder = "http://your-mac.local",
+                placeholder = "https://your-mac.tail12345.ts.net",
                 keyboardType = KeyboardType.Uri,
             )
             MonoTextField(

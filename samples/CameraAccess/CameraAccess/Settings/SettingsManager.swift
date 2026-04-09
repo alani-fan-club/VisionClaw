@@ -6,6 +6,7 @@ final class SettingsManager {
   private let defaults = UserDefaults.standard
 
   private enum Key: String {
+    case hasCompletedSetup
     case geminiAPIKey
     case openClawHost
     case openClawPort
@@ -22,9 +23,18 @@ final class SettingsManager {
     case agentAutoStart
     case ttsVoiceIdentifier
     case ttsRate
+    case elevenLabsAPIKey
+    case elevenLabsVoiceId
   }
 
   private init() {}
+
+  // MARK: - Setup
+
+  var hasCompletedSetup: Bool {
+    get { defaults.bool(forKey: Key.hasCompletedSetup.rawValue) }
+    set { defaults.set(newValue, forKey: Key.hasCompletedSetup.rawValue) }
+  }
 
   // MARK: - Gemini
 
@@ -132,14 +142,27 @@ final class SettingsManager {
     set { defaults.set(newValue, forKey: Key.ttsRate.rawValue) }
   }
 
+  // MARK: - ElevenLabs
+
+  var elevenLabsAPIKey: String {
+    get { defaults.string(forKey: Key.elevenLabsAPIKey.rawValue) ?? "" }
+    set { defaults.set(newValue, forKey: Key.elevenLabsAPIKey.rawValue) }
+  }
+
+  var elevenLabsVoiceId: String {
+    get { defaults.string(forKey: Key.elevenLabsVoiceId.rawValue) ?? "jfIS2w2yJi0grJZPyEsk" }
+    set { defaults.set(newValue, forKey: Key.elevenLabsVoiceId.rawValue) }
+  }
+
   // MARK: - Reset
 
   func resetAll() {
-    for key in [Key.geminiAPIKey, .geminiSystemPrompt, .openClawHost, .openClawPort,
+    for key in [Key.hasCompletedSetup, .geminiAPIKey, .geminiSystemPrompt, .openClawHost, .openClawPort,
                 .openClawHookToken, .openClawGatewayToken, .webrtcSignalingURL,
                 .speakerOutputEnabled, .videoStreamingEnabled,
                 .proactiveNotificationsEnabled, .wakeWord, .silenceTimeoutSeconds,
-                .visionTriggerPhrases, .agentAutoStart, .ttsVoiceIdentifier, .ttsRate] {
+                .visionTriggerPhrases, .agentAutoStart, .ttsVoiceIdentifier, .ttsRate,
+                .elevenLabsAPIKey, .elevenLabsVoiceId] {
       defaults.removeObject(forKey: key.rawValue)
     }
   }

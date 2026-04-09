@@ -49,7 +49,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -57,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.BuildConfig
+import com.meta.wearable.dat.externalsampleapps.cameraaccess.settings.SettingsManager
 import com.meta.wearable.dat.externalsampleapps.cameraaccess.wearables.WearablesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +70,7 @@ fun CameraAccessScaffold(
     modifier: Modifier = Modifier,
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+  var hasCompletedSetup by remember { mutableStateOf(SettingsManager.hasCompletedSetup) }
   val snackbarHostState = remember { SnackbarHostState() }
   val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -81,6 +85,10 @@ fun CameraAccessScaffold(
   Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
     Box(modifier = Modifier.fillMaxSize()) {
       when {
+        !hasCompletedSetup ->
+            SetupScreen(
+                onComplete = { hasCompletedSetup = true },
+            )
         uiState.isSettingsVisible ->
             SettingsScreen(
                 onBack = { viewModel.hideSettings() },

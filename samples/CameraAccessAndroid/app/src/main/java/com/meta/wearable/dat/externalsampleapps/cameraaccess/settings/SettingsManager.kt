@@ -13,6 +13,10 @@ object SettingsManager {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
+    var hasCompletedSetup: Boolean
+        get() = prefs.getBoolean("hasCompletedSetup", false)
+        set(value) = prefs.edit().putBoolean("hasCompletedSetup", value).apply()
+
     var geminiAPIKey: String
         get() = prefs.getString("geminiAPIKey", null) ?: Secrets.geminiAPIKey
         set(value) = prefs.edit().putString("geminiAPIKey", value).apply()

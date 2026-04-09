@@ -83,12 +83,18 @@ class AgentSessionViewModel: ObservableObject {
       self?.voiceActivityDetector.processRMS(rms)
     }
 
-    // Configure ElevenLabs TTS (Liam — young British male)
-    ttsService.elevenLabsApiKey = "YOUR_ELEVENLABS_API_KEY"
+    // Configure ElevenLabs TTS from settings
+    let elKey = settings.elevenLabsAPIKey
+    if !elKey.isEmpty {
+      ttsService.elevenLabsApiKey = elKey
+      ttsService.elevenLabsVoiceId = settings.elevenLabsVoiceId
+      NSLog("[Agent] ElevenLabs TTS configured (voice: %@)", settings.elevenLabsVoiceId)
+    } else {
+      NSLog("[Agent] ElevenLabs TTS not configured — using system TTS")
+    }
     ttsService.audioPlayback = { [weak self] data in
       self?.audioManager.playAudio(data: data)
     }
-    NSLog("[Agent] ElevenLabs TTS configured (voice: Liam)")
 
     // Wire TTS speaking state to manage conversation flow
     ttsService.onSpeakingStateChanged = { [weak self] isSpeaking in

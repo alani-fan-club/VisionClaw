@@ -68,21 +68,25 @@ cd VisionClaw/samples/CameraAccess
 open CameraAccess.xcodeproj
 ```
 
-### 2. Add your secrets
+### 2. Set your bundle identifier
 
-Copy the example file and fill in your values:
+In Xcode, open the **Signing & Capabilities** tab and change `PRODUCT_BUNDLE_IDENTIFIER` from the default `com.example.VisionClaw` to your own (e.g. `com.yourname.VisionClaw`). Apple will not sign `com.example.*` for development.
+
+### 3. (Optional) Pre-fill secrets
+
+You can either configure everything **at first launch via the in-app Setup screen** (recommended), or pre-fill values by copying the example secrets file:
 
 ```bash
 cp CameraAccess/Secrets.swift.example CameraAccess/Secrets.swift
 ```
 
-Edit `Secrets.swift` with your [Gemini API key](https://aistudio.google.com/apikey) (required) and optional OpenClaw/WebRTC config.
+Edit `Secrets.swift` with your [Gemini API key](https://aistudio.google.com/apikey) and optional OpenClaw/WebRTC config. Either way, the in-app Settings screen (gear icon on the home screen) lets you change values at runtime.
 
-### 3. Build and run
+### 4. Build and run
 
-Select your iPhone as the target device and hit Run (Cmd+R).
+Select your iPhone as the target device and hit Run (Cmd+R). On first launch, the **Setup** wizard walks you through entering your Gemini API key and (optionally) the OpenClaw gateway and ElevenLabs voice settings.
 
-### 4. Try it out
+### 5. Try it out
 
 **Without glasses (iPhone mode):**
 1. Tap **"Start on iPhone"** -- uses your iPhone's back camera
@@ -132,14 +136,16 @@ github_token=YOUR_GITHUB_TOKEN
 >
 > **Note:** GitHub Packages requires authentication even for public repositories. The 401 error means your token is missing or invalid.
 
-### 3. Add your secrets
+### 3. (Optional) Pre-fill secrets
+
+As on iOS, you can configure everything **at first launch via the in-app Setup screen** (recommended), or pre-fill the example secrets file:
 
 ```bash
 cd samples/CameraAccessAndroid/app/src/main/java/com/meta/wearable/dat/externalsampleapps/cameraaccess/
 cp Secrets.kt.example Secrets.kt
 ```
 
-Edit `Secrets.kt` with your [Gemini API key](https://aistudio.google.com/apikey) (required) and optional OpenClaw/WebRTC config.
+Edit `Secrets.kt` with your [Gemini API key](https://aistudio.google.com/apikey) and optional OpenClaw/WebRTC config.
 
 ### 4. Build and run
 
@@ -197,36 +203,49 @@ Key settings:
 - `chatCompletions.enabled: true` -- enables the `/v1/chat/completions` endpoint (off by default)
 - `auth.token` -- the token your app will use to authenticate
 
-### 2. Configure the app
+### 2. Expose the gateway over HTTPS via Tailscale
+
+iOS App Transport Security blocks plain HTTP connections, so the gateway must be reached over HTTPS. The easiest way to do this is with [Tailscale](https://tailscale.com), which provides a free TLS cert for your machine via MagicDNS.
+
+**Requirements:**
+- Tailscale must be installed on both your Mac and your phone
+- **DNS Management must be enabled** in Tailscale (Tailscale → Preferences → **Use Tailscale DNS**) — without this, MagicDNS hostnames won't resolve and HTTPS won't work
+- Tailscale Serve must be enabled on your tailnet ([enable here](https://login.tailscale.com/admin/settings/general))
+
+**Start the OpenClaw gateway:**
+```bash
+openclaw gateway restart
+```
+
+**Put a Tailscale HTTPS proxy in front of it:**
+```bash
+tailscale serve --bg --https=443 http://127.0.0.1:18789
+```
+
+This makes your gateway reachable at `https://your-mac.your-tailnet.ts.net` (port 443) with a valid TLS cert. Find your hostname with `tailscale status`.
+
+### 3. Configure the app
 
 **iOS** -- In `Secrets.swift`:
 ```swift
-static let openClawHost = "http://Your-Mac.local"
-static let openClawPort = 18789
+static let openClawHost = "https://your-mac.your-tailnet.ts.net"
+static let openClawPort = 443
 static let openClawGatewayToken = "your-gateway-token-here"
 ```
 
 **Android** -- In `Secrets.kt`:
 ```kotlin
-const val openClawHost = "http://Your-Mac.local"
-const val openClawPort = 18789
+const val openClawHost = "https://your-mac.your-tailnet.ts.net"
+const val openClawPort = 443
 const val openClawGatewayToken = "your-gateway-token-here"
 ```
 
-To find your Mac's Bonjour hostname: **System Settings > General > Sharing** -- it's shown at the top (e.g., `Johns-MacBook-Pro.local`).
+> Both iOS and Android have an in-app Setup screen on first launch (and a Settings screen later) where you can enter these values without editing source code.
 
-> Both iOS and Android also have an in-app Settings screen where you can change these values at runtime without editing source code.
-
-### 3. Start the gateway
+Verify the gateway is reachable from another machine on your tailnet:
 
 ```bash
-openclaw gateway restart
-```
-
-Verify it's running:
-
-```bash
-curl http://localhost:18789/health
+curl -k https://your-mac.your-tailnet.ts.net/v1/chat/completions
 ```
 
 Now when you talk to the AI, it can execute tasks through OpenClaw.

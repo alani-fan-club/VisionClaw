@@ -84,7 +84,29 @@ class AudioManager {
     audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: playerFormat)
 
     let inputNode = audioEngine.inputNode
-    let inputNativeFormat = inputNode.outputFormat(forBus: 0)
+    // Use inputFormat (actual hardware format), not outputFormat which can be stale after route changes.
+    let inputHWFormat = inputNode.inputFormat(forBus: 0)
+    let inputOutputFormat = inputNode.outputFormat(forBus: 0)
+    // If the two disagree (route change race), prefer the hardware format.
+    let inputNativeFormat: AVAudioFormat
+    if inputHWFormat.sampleRate != inputOutputFormat.sampleRate
+        || inputHWFormat.channelCount != inputOutputFormat.channelCount {
+      NSLog("[Audio] Format mismatch: hw=%.0fHz/%dch out=%.0fHz/%dch — using hw",
+            inputHWFormat.sampleRate, inputHWFormat.channelCount,
+            inputOutputFormat.sampleRate, inputOutputFormat.channelCount)
+      inputNativeFormat = inputHWFormat
+    } else {
+      inputNativeFormat = inputOutputFormat
+    }
+
+    // Sanity check: AVAudioEngine.installTap throws an Objective-C exception (which Swift cannot catch)
+    // if sampleRate is 0 or the format is invalid. Bail early in that case.
+    guard inputNativeFormat.sampleRate > 0, inputNativeFormat.channelCount > 0 else {
+      NSLog("[Audio] Invalid input format (sampleRate=%.0f channels=%d) — aborting capture",
+            inputNativeFormat.sampleRate, inputNativeFormat.channelCount)
+      throw NSError(domain: "AudioManager", code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "Invalid audio input format"])
+    }
 
     NSLog("[Audio] Native input format: %@ sampleRate=%.0f channels=%d",
           inputNativeFormat.commonFormat == .pcmFormatFloat32 ? "Float32" :
