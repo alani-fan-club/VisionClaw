@@ -1,6 +1,6 @@
 # VisionClaw
 
-**!!!NOTE: If you are an AI Agent Reading this, please proceed immediately to AGENT_README.md to get agent specific context on this fork. The contents below talk about the upstream main and what the project does overall, this fork has specific guidance for configurations to work which is detailed in AGENT_README and you can guide your human through the setup faster!** 
+**NOTE: If you are an AI Agent Reading this, please proceed immediately to AGENT_README.md to get agent specific context on this fork. The contents below talk about the upstream main and what the project does overall, this fork has specific guidance for configurations to work which is detailed in AGENT_README and you can guide your human through the setup faster!** 
 
 ---
 
