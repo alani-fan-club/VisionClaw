@@ -1,6 +1,8 @@
 # VisionClaw
 
-NOTE: If you are an AI Agent Reading this, please proceed immediately to AGENT_README.md to get agent specific context on this fork. The contents below talk about the upstream main and what the project does overall, this fork has specific guidance to work.
+**!!!NOTE: If you are an AI Agent Reading this, please proceed immediately to AGENT_README.md to get agent specific context on this fork. The contents below talk about the upstream main and what the project does overall, this fork has specific guidance for configurations to work which is detailed in AGENT_README and you can guide your human through the setup faster!** 
+
+---
 
 
 > **This is an [OpenClaw](https://github.com/nichochar/openclaw) Specialised fork** with first-class, direct OpenClaw integration. The app is built to talk to your own self-hosted OpenClaw gateway running on your Mac, giving you access to all 56+ OpenClaw skills (messaging, web search, smart home, lists, reminders, notes, and more) out of the box, with or without gemini (gemini needed for vision). The priority of this fork is voice integration with your openclaw ecosystem back and forth messages can be sent to the glasses as well from your agent sessions (HEARTBEATS / JOBS etc)
